@@ -130,7 +130,11 @@ router.get('/product/:id', (req, res) => {
         if(err || result == null || result.productPublished === 'false'){
             res.render('error', {title: 'Not found', message: 'Product not found', helpers: req.handlebars.helpers, config});
         }else{
-            common.sendKafkaMessage('item-views', JSON.stringify(result.productPermalink), JSON.stringify(result._id), JSON.stringify(result.productPrice));
+            let userId = 'anonymous';
+            if(req.session.customer != null){
+                userId = JSON.stringify(req.session.customer._id);
+            }
+            common.sendKafkaMessage('item-views', userId, JSON.stringify(result.productPermalink), JSON.stringify(result._id), JSON.stringify(result.productPrice));
             let productOptions = {};
             if(result.productOptions){
                 productOptions = JSON.parse(result.productOptions);
@@ -287,7 +291,11 @@ router.post('/product/addtocart', (req, res, next) => {
                 return res.status(400).json({message: 'There is insufficient stock of this product.'});
             }
         }
-        common.sendKafkaMessage('added-to-cart',JSON.stringify(product.productPermalink), JSON.stringify(product._id), JSON.stringify(product.productPrice));
+        let userId = 'anonymous';
+        if(req.session.customer != null){
+            userId = JSON.stringify(req.session.customer._id);
+        }
+        common.sendKafkaMessage('added-to-cart', userId, JSON.stringify(product.productPermalink), JSON.stringify(product._id), JSON.stringify(product.productPrice));
 
         let productPrice = parseFloat(product.productPrice).toFixed(2);
 
