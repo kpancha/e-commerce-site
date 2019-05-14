@@ -130,7 +130,7 @@ router.get('/product/:id', (req, res) => {
         if(err || result == null || result.productPublished === 'false'){
             res.render('error', {title: 'Not found', message: 'Product not found', helpers: req.handlebars.helpers, config});
         }else{
-            let userId = 'anonymous';
+            let userId = 'abcdefghijklm1234567890';
             if(req.session.customer != null){
                 userId = JSON.stringify(req.session.customer._id);
             }
@@ -291,7 +291,7 @@ router.post('/product/addtocart', (req, res, next) => {
                 return res.status(400).json({message: 'There is insufficient stock of this product.'});
             }
         }
-        let userId = 'anonymous';
+        let userId = 'abcdefghijklm1234567890';
         if(req.session.customer != null){
             userId = JSON.stringify(req.session.customer._id);
         }
