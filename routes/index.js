@@ -12,10 +12,10 @@ router.get('/payment/:orderId', async (req, res, next) => {
 
     // render the payment complete message
     db.orders.findOne({_id: common.getId(req.params.orderId)}, async (err, order) => {
-        if(err){
+	if(err){
             console.info(err.stack);
         }
-
+	
         // If stock management is turned on payment approved update stock level
         if(config.trackStock && req.session.paymentApproved){
             order.orderProducts.forEach(async (product) => {
@@ -62,6 +62,19 @@ router.get('/checkout', async (req, res, next) => {
         return;
     }
 
+    let userId = "abcdefghijklm1234567890";
+    if(req.session.customer != null){
+	userId = JSON.stringify(req.session.customer._id);
+    }
+    for (i = 0; i < req.session.cart.length; i++) {
+	let url = JSON.stringify(req.session.cart[i].link);
+	let productId = JSON.stringify(req.session.cart[i].productId);
+	let totalPrice = JSON.stringify(req.session.cart[i].totalItemPrice);
+	let quantity = JSON.stringify(req.session.cart[i].quantity);
+	let price = (totalPrice / quantity).toString();
+	common.sendKafkaMessage('purchases', userId, url, productId, totalPrice);
+    }
+    // common.sendKafkaMessage('test','test','test','test','test');
     // render the checkout
     res.render(`${config.themeViews}checkout`, {
         title: 'Checkout',
@@ -87,7 +100,7 @@ router.get('/pay', async (req, res, next) => {
         res.redirect('/checkout');
         return;
     }
-
+    
     // render the payment page
     res.render(`${config.themeViews}pay`, {
         title: 'Pay',
@@ -130,11 +143,11 @@ router.get('/product/:id', (req, res) => {
         if(err || result == null || result.productPublished === 'false'){
             res.render('error', {title: 'Not found', message: 'Product not found', helpers: req.handlebars.helpers, config});
         }else{
-            let userId = 'abcdefghijklm1234567890';
-            if(req.session.customer != null){
-                userId = JSON.stringify(req.session.customer._id);
-            }
-            common.sendKafkaMessage('item-views', userId, JSON.stringify(result.productPermalink), JSON.stringify(result._id), JSON.stringify(result.productPrice));
+	    let userId = 'abcdefghijklm1234567890';
+	    if(req.session.customer != null){
+		userId = JSON.stringify(req.session.customer._id);
+	    }
+	    common.sendKafkaMessage('item-views', userId, JSON.stringify(result.productPermalink), JSON.stringify(result._id), JSON.stringify(result.productPrice));
             let productOptions = {};
             if(result.productOptions){
                 productOptions = JSON.parse(result.productOptions);
@@ -291,12 +304,13 @@ router.post('/product/addtocart', (req, res, next) => {
                 return res.status(400).json({message: 'There is insufficient stock of this product.'});
             }
         }
-        let userId = 'abcdefghijklm1234567890';
-        if(req.session.customer != null){
-            userId = JSON.stringify(req.session.customer._id);
-        }
-        common.sendKafkaMessage('added-to-cart', userId, JSON.stringify(product.productPermalink), JSON.stringify(product._id), JSON.stringify(product.productPrice));
-
+	
+	let userId = 'abcdefghijklm1234567890';
+	if(req.session.customer != null){
+	    userId = JSON.stringify(req.session.customer._id);
+	}
+	common.sendKafkaMessage('added-to-cart', userId, JSON.stringify(product.productPermalink), JSON.stringify(product._id), JSON.stringify(product.productPrice));
+	
         let productPrice = parseFloat(product.productPrice).toFixed(2);
 
         // Doc used to test if existing in the cart with the options. If not found, we add new.
